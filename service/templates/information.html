@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <title>농부도우미</title>
+        <style>
+            table.layout { width: 100%; height: 100%; border-collapse: collapse; }
+            img.main-logo { width:80px; height:80px; }
+            div.nav { height: 100px; background: #FFFFFF; }
+            span.logo-text { font-size: 30px; font-weight: bold; }
+            div.aside { height: calc(100% - 30px); background: #DCEDC8; font-size: 20px; padding: 15px; }
+            div.main { width: 100%; height: 100%; background: #F1F8E9; }
+            span.title { font-size: 25px; font-weight: bold; }
+            .reg-info { width: 200px; }
+            .left { float: left; display: flex; align-items: center; }
+            .right { height: 100%; float: right; display: inline-block; display: flex; align-items: center; }
+            .right .username { margin: 0 40px 0 0; }
+            .right .usercrop { margin: 0 40px 0 0; }
+            table.vermin { border: 1px solid #000000; width: 100%; border-collapse: collapse;}
+            table.vermin tr td { border-bottom: 1px solid #000000; padding: 10px; }
+            .main .left { width: 30%; }
+            .main .right { width: calc(70% - 10px); padding: 0 0 0 10px; }
+            table.detail { width: 100%; border: 1px solid #000000; border-collapse: collapse; }
+            table.detail tr td { border: 1px solid #000000; }
+            table.detail img { margin: 5px; }
+            #schedule-table { text-align: center; }
+/*             table.vermin tr:nth-child(even) td { border-bottom: 1px solid #000000; } */
+        </style>
+    </head>
+    
+    <body>
+        <table class="layout">
+            <colgroup>
+                <col width="200px">
+                <col>
+            </colgroup>
+            
+            <tr><td colspan="2"><div class="nav">
+                <div class="left">
+                    <img class="main-logo" onclick="location.href='/';" src="{{ url_for('static', filename='images/main_logo.png') }}" />
+                    <span class="logo-text" onclick="location.href='/';">농부도우미</span>
+                </div>
+                <div class="right">
+                    <span class="usercrop">재배 작물 : {{ usercrop }}</span>
+                    <a href="/information"><span class="username">{{ username }}님</span></a>
+                    <span onclick="logout();">로그아웃</span>
+                </div>
+                </div></td></tr>
+            
+            <tr><td><div class="aside" background="#FF11FF">
+                <br/>
+                <a href="/schedule"><span>연간 농작업 일정</span></a><br/>
+                <br/>
+                <a href="/vermin"><span>병해충 정보</span></a><br/>
+                <br/>
+                <a href="/diary"><span>영농일지</span></a><br/>                
+                </div></td>
+                 
+                <td><div class="main" background="#FFFF11">
+                    <br/>
+                    <span class="title">개인 정보</span>
+                    <div id="member-info">
+                    </div>
+                    <br/>
+                    <span class='title'>영농일지</span>
+                    <div id='diary-info'>
+                    </div>
+                    <br/>
+                </div></td></tr>
+        </table>
+    </body>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.js"></script>
+    <script>
+        var infoData = {{ info|safe }};
+        var html = '<table>';
+        html += '<tr><td nowrap>아이디</td><td>' + infoData['username'] + '</td></tr>';
+        html += '<tr><td nowrap>이름</td><td>' + infoData['name'] + '</td></tr>';
+        html += '<tr><td nowrap>전화번호</td><td>' + infoData['phone'] + '</td></tr>';
+        html += '<tr><td nowrap>지역</td><td>' + infoData['address'] + '</td></tr>';
+        html += '</table>';
+        
+        $('#member-info').html(html);
+        
+        var diaryData = {{ diary_info|safe }};
+        if (diaryData.length == 0){
+            $('#diary-info').text("작성하신 영농일지 내역이 없습니다.");
+        } else {
+            html = '<table>';
+            for (var i in diaryData){
+                diary = diaryData[i]
+                html += '<tr><td nowrap>날짜</td><td>' + diary['date'] + '</td></tr>';
+                html += '<tr><td nowrap>작업 인원</td><td>' + diary['people'] + '</td></tr>';
+                html += '<tr><td nowrap>작업 시간</td><td>' + diary['duration'] + '시간</td></tr>';
+                html += '<tr><td nowrap>작업 단계</td><td>' + diary['step'] + '</td></tr>';
+                html += '<tr><td nowrap>작업 내용</td><td>' + diary['content'] + '</td></tr>';
+                html += '<tr><td nowrap>농약 / 비료</td><td>' + diary['useditem'] + '</td></tr>';
+                html += '<tr><td nowrap>추가 정보</td><td>' + diary['etc'] + '</td></tr>';
+ 
+                html += '<tr><td colspan="2" style="border-top: 1px solid #000000"></td></tr>'
+            }    
+            html += '</table>';
+            $('#diary-info').html(html);
+        }
+
+        function logout() {
+            document.cookie = 'username=';
+            location.href = '/';
+        } 
+
+        
+    </script>
+</html>

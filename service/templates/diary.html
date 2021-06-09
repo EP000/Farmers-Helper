@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <title>농부도우미</title>
+        <style>
+            table.layout { width: 100%; height: 100%; border-collapse: collapse; }
+            img.main-logo { width:80px; height:80px; }
+            div.nav { height: 100px; background: #FFFFFF; }
+            span.logo-text { font-size: 30px; font-weight: bold; }
+            div.aside { height: 270px; background: #DCEDC8; font-size: 20px; padding: 15px; }
+            div.main { width: 100%; height: 300px; background: #F1F8E9; display: flex; align-items: center; }
+            span.title { font-size: 25px; font-weight: bold; }
+            .reg-info { width: 200px; }
+            .left { float: left; display: flex; align-items: center; }
+            .right { height: 100%; float: right; display: inline-block; display: flex; align-items: center; }
+            .right .username { margin: 0 40px 0 0; }
+            .right .usercrop { margin: 0 40px 0 0; }
+        </style>
+    </head>
+    
+    <body>
+        <table class="layout">
+            <colgroup>
+                <col width="200px">
+                <col>
+            </colgroup>
+            
+            <tr><td colspan="2"><div class="nav">
+                <div class="left">
+                    <img class="main-logo" onclick="location.href='/';" src="{{ url_for('static', filename='images/main_logo.png') }}" />
+                    <span class="logo-text" onclick="location.href='/';">농부도우미</span>
+                </div>
+                <div class="right">
+                    <span class="usercrop">재배 작물 : {{ usercrop }}</span>
+                    <a href="/information"><span class="username">{{ username }}님</span></a>
+                    <span onclick="logout();">로그아웃</span>
+                </div>
+                </div></td></tr>
+            
+            <tr><td><div class="aside" background="#FF11FF">
+                <br/>
+                <a href="/schedule"><span>연간 농작업 일정</span></a><br/>
+                <br/>
+                <a href="/vermin"><span>병해충 정보</span></a><br/>
+                <br/>
+                <a href="/diary"><span>영농일지</span></a><br/>                
+                </div></td>
+                 
+                <td><div class="main" background="#FFFF11">
+                    <table>
+                        <tr><td><span class="title">영농일지 작성</span></td></tr>
+                        <tr><td>날짜</td><td><input class="reg-info" id="date" type="date"/></td></tr>
+                        <tr><td>작업 인원</td><td><input class="reg-info" id="people" type="number" /></td></tr>
+                        <tr><td>작업 시간(시)</td><td><input class="reg-info" id="duration" type="number" /></td></tr>
+                        <tr><td>작업 단계</td><td><select class="reg-info" id="step">{{ schedule|safe }}</select></td></tr>
+                        <tr><td>작업 내용</td><td><input class="reg-info" id="content" type="text" /></td></tr>
+                        <tr><td>농약/비료</td><td><input class="reg-info" id="useditem" type="text" /></td></tr>
+                        <tr><td>추가 정보</td><td><input class="reg-info" id="etc" type="text" /></td></tr>
+                        <td colspan="2"><button onclick="submit();">작성 완료</button></td>
+                    </table>
+                </div></td></tr>
+        </table>
+    </body>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.js"></script>
+    <script>
+        function submit(){
+            var date = $('#date').val();
+            var people = $('#people').val();
+            var duration = $('#duration').val();
+            var step = $('#step').val();
+            var content = $('#content').val();
+            var useditem = $('#useditem').val();
+            var etc = $('#etc').val();
+            $.post('/handle-diary', {
+                date : date,
+                people : people,
+                duration : duration,
+                step : step,
+                content : content,
+                useditem : useditem,
+                etc : etc,
+            }, function(diary) {
+                if (diary.statusCode == 200){
+                    alert('작성 완료');
+                    location.href = '/diary';
+                } else {
+                    alert('작성 실패. 원인 : ' + diary.msg);
+                }
+            })
+        }
+        
+        function logout() {
+            document.cookie = 'username=';
+            location.href = '/';
+        }
+    </script>
+</html>

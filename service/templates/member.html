@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <title>농부도우미</title>
+        <style>
+            span.title { font-size: 25px; font-weight: bold; }
+            div { text-align: center; top: 250px; position: relative; }
+            table { display: flex; justify-content: center; }
+            .reg-info { width: 200px; }
+        </style>
+    </head>
+    <body>
+        <div>
+            <table>
+                <tr><td colspan="2"><span class="title">회원가입</span></td></tr>
+                <tr><td>아이디</td><td><input class="reg-info" id="username" type="text" /></td></tr>
+                <tr><td>비밀번호</td><td><input class="reg-info" id="password" type="password" /></td></tr>
+                <tr><td>이름</td><td><input class="reg-info" id="name" type="text" /></td></tr>
+                <tr><td>전화번호</td><td><input class="reg-info" id="phone" type="text" /></td></tr>
+                <tr><td>지역</td><td><input class="reg-info" id="address" type="text" /></td></tr>
+                <tr><td>재배작물</td><td><select class="reg-info" id="Crop">
+                    <option value='감귤'>감귤</option>
+                    <option value='단감'>단감</option>
+                    <option value='매실'>매실</option>
+                    <option value='무화과'>무화과</option>
+                    <option value='배'>배</option>
+                    <option value='복숭아'>복숭아</option>
+                    <option value='살구'>살구</option>
+                    <option value='양앵두'>양앵두</option>
+                    <option value='유자'>유자</option>
+                    <option value='자두'>자두</option>
+                    <option value='참다래'>참다래</option>
+                    <option value='포도'>포도</option>
+                    </select></td></tr>
+                <td colspan="2"><button onclick="register();">가입</button></td>
+            </table>
+        </div>
+    </body>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.js"></script>
+    <script>
+        function register() {
+            var username = $('#username').val();
+            var password = $('#password').val();
+            var name = $('#name').val();
+            var phone = $('#phone').val();
+            var address = $('#address').val();
+            var Crop = $('#Crop').val();
+            $.post('/handle-register', {
+                username: username, 
+                password: password,
+                name: name,
+                phone: phone,
+                address: address,
+                Crop: Crop,
+            }, function(res) {
+                if (res.statusCode == 200) {
+                    alert('회원가입 성공!');
+                    location.href = '/';
+                } else {
+                    alert('회원가입 실패! 원인: ' + res.msg);
+                }
+            })
+        }
+    </script>
+</html>

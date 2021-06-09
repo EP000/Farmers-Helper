@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <title>농부도우미</title>
+        <style>
+            table.layout { width: 100%; height: 100%; border-collapse: collapse; }
+            img.main-logo { width:80px; height:80px; }
+            div.nav { height: 100px; background: #FFFFFF; }
+            span.logo-text { font-size: 30px; font-weight: bold; }
+            div.aside { height: calc(100% - 30px); background: #DCEDC8; font-size: 20px; padding: 15px; }
+            div.main { width: 100%; height: 100%; background: #F1F8E9; }
+            span.title { font-size: 25px; font-weight: bold; }
+            .reg-info { width: 200px; }
+            .left { float: left; display: flex; align-items: center; }
+            .right { height: 100%; float: right; display: inline-block; display: flex; align-items: center; }
+            .right .username { margin: 0 40px 0 0; }
+            .right .usercrop { margin: 0 40px 0 0; }
+            table.vermin { border: 1px solid #000000; width: 100%; border-collapse: collapse;}
+            table.vermin tr td { border-bottom: 1px solid #000000; padding: 10px; }
+            .main .left { width: 30%; }
+            .main .right { width: calc(70% - 10px); padding: 0 0 0 10px; }
+            table.detail { width: 100%; border: 1px solid #000000; border-collapse: collapse; }
+            table.detail tr td { border: 1px solid #000000; }
+            table.detail img { margin: 5px; }
+/*             table.vermin tr:nth-child(even) td { border-bottom: 1px solid #000000; } */
+        </style>
+    </head>
+    
+    <body>
+        <table class="layout">
+            <colgroup>
+                <col width="200px">
+                <col>
+            </colgroup>
+            
+            <tr><td colspan="2"><div class="nav">
+                <div class="left">
+                    <img class="main-logo" onclick="location.href='/';" src="{{ url_for('static', filename='images/main_logo.png') }}" />
+                    <span class="logo-text" onclick="location.href='/';">농부도우미</span>
+                </div>
+                <div class="right">
+                    <span class="usercrop">재배 작물 : {{ usercrop }}</span>
+                    <a href="/information"><span class="username">{{ username }}님</span></a>
+                    <span onclick="logout();">로그아웃</span>
+                </div>
+                </div></td></tr>
+            
+            <tr><td><div class="aside" background="#FF11FF">
+                <br/>
+                <a href="/schedule"><span>연간 농작업 일정</span></a><br/>
+                <br/>
+                <a href="/vermin"><span>병해충 정보</span></a><br/>
+                <br/>
+                <a href="/diary"><span>영농일지</span></a><br/>                
+                </div></td>
+                 
+                <td><div class="main" background="#FFFF11">
+                    <span class="title">{{ usercrop }}의 병해충 정보</span>
+                    <div>
+                        <div class="table-area left">
+                        </div>
+                        <div class="detail-area right">
+                        </div>
+                    </div>
+                </div></td></tr>
+        </table>
+    </body>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.js"></script>
+    <script>
+        var verminData = {{ vermin_data|safe }};
+        if (verminData.length == 0) {
+            $('.table-area').text("해당 작물은 병해충 정보가 없습니다.");
+        } else {
+            var html = '<table class="vermin">';
+            for (var i in verminData) {
+                var vermin = verminData[i];
+                html += '<tr onclick="showDetail(this);" data-idx="' + i + '"><td>';
+                html += vermin.sickNameKor + '(' + vermin.sickNameChn + ') [' + vermin.sickNameEng + ']';
+                html += '</td></tr>';
+            }
+            html += '</table>';
+            $('.table-area').html(html);
+        }
+        
+        function showDetail(obj) {
+            var idx = $(obj).attr('data-idx');
+            var vermin = verminData[idx];
+            var html = '<table class="detail">';
+            html += '<tr><td rowspan="3" nowrap>병명</td><td nowrap>한글</td><td>' + vermin.sickNameKor + '</td></tr>';
+            html += '<tr><td nowrap>한자</td><td>' + vermin.sickNameChn + '</td></tr>';
+            html += '<tr><td nowrap>영문</td><td>' + vermin.sickNameEng + '</td></tr>';
+            html += '<tr><td colspan="2" nowrap>증상</td><td>' + vermin.symptoms + '</td></tr>';
+            html += '<tr><td colspan="2" nowrap>전염경로</td><td>' + vermin.infectionRoute + '</td></tr>';
+            html += '<tr><td colspan="2" nowrap>발생생태</td><td>' + vermin.developmentCondition + '</td></tr>';
+            html += '<tr><td rowspan="3" nowrap>방제방법</td><td nowrap>일반</td><td>' + vermin.preventionMethod + '</td></tr>';
+            html += '<tr><td nowrap>생물학적</td><td>' + vermin.biologyPrvnbeMth + '</td></tr>';
+            html += '<tr><td nowrap>화학적</td><td>' + vermin.chemicalPrvnbeMth + '</td></tr>';
+            
+            for (var i in vermin.virusList) {
+                var virus = vermin.virusList[i];
+                html += '<tr><td rowspan="2" nowrap>병원체' + (parseInt(i)+1) + '</td><td nowrap>이름</td><td>' + virus.name + '</td></tr>';
+                html += '<tr><td nowrap>특징</td><td>' + virus.sfe + '</td></tr>';
+            }
+            html += '<tr><td colspan="2" nowrap>병원체 사진</td><td>'
+            for (var i in vermin.virusImgList) {
+                var image = vermin.virusImgList[i];
+                html += '<img src="' + image.image +'" style="height: 150px;"/>';
+            }
+            html += '</td></tr>'
+            html += '<tr><td colspan="2" nowrap>병피해 사진</td><td>'
+            for (var i in vermin.imageList) {
+                var image = vermin.imageList[i];
+                html += '<img src="' + image.image +'" style="height: 150px;"/>';
+            }
+            html += '</td></tr>'
+            
+            
+            html += '</table>';
+            
+            $('.detail-area').html(html);
+        }
+        
+        function logout() {
+            document.cookie = 'username=';
+            location.href = '/';
+        }
+    </script>
+</html>

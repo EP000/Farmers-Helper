@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <title>농부도우미</title>
+        <style>
+            span.title { font-size: 25px; font-weight: bold; }
+            div { text-align: center; top: 150px; position: relative; }
+            table { display: flex; justify-content: center; }
+            img.main-logo { width:200px; height:200px; }
+        </style>
+    </head>
+    <body>
+        <div>
+            <table>
+                <tr><td colspan="3"><img class="main-logo" src="{{ url_for('static', filename='images/main_logo.png') }}" /></td></tr>
+                <tr><td colspan="3"><span class="title">농부도우미</span></td></tr>
+                <tr><td>아이디</td><td><input id="username" type="text" /></td><td rowspan="2"><button onclick="login();">로그인</button></td></tr>
+                <tr><td>비밀번호</td><td><input id="password" type="password" /></td></tr>
+            </table>
+            <a href="/member"><span>회원가입</span></a>
+        </div>
+    </body>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.js"></script>
+    <script>
+        function login() {
+            var username = $('#username').val();
+            var password = $('#password').val();
+            $.post('/handle-login', {username: username, password: password},
+                  function(res) {
+                if (res.statusCode == 200) {
+                    document.cookie = 'username=' + username;
+                    location.href = '/';
+                } else {
+                    alert('로그인 실패! 원인: ' + res.msg);
+                }
+            })
+        }
+    </script>
+</html>
