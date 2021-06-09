@@ -3,3 +3,4 @@ venv_*
 *.sw*
 __pycache__/
 nohup*
+*.pickle
