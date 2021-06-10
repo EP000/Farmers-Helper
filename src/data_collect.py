@@ -14,7 +14,11 @@ fruits = ['감귤', '단감', '매실', '무화과', '배',
          '자두', '참다래', '포도']
 
 def get_schedule():
-
+    """Collect farming schedule data from fruit.nihhs.go.kr
+    
+    :return: pairs of {fruit : farming_schedule}
+    :rtype: dict
+    """
     addr_list = {
         '감귤'  :   'https://fruit.nihhs.go.kr/common/ajax_local_callback.jsp?farmWorkingPlanNew/workScheduleEraInfoLst?apiKey=20181008H9RSARMLDRREKBRCTEGQ&htmlArea=nongsaroApiLoadingArea2&kidofcomdtySeCode=210002&cntntsNo=30654&sj=%EA%B0%90%EA%B7%A4(%EB%B3%B4%ED%86%B5%20%EC%98%A8%EC%A3%BC%EB%B0%80%EA%B0%90)&kidofcomdtySeCodeNm=%EA%B3%BC%EC%88%98&serviceType=ajaxType',
         '단감'  :   'https://fruit.nihhs.go.kr/common/ajax_local_callback.jsp?farmWorkingPlanNew/workScheduleEraInfoLst?apiKey=20181008H9RSARMLDRREKBRCTEGQ&htmlArea=nongsaroApiLoadingArea2&kidofcomdtySeCode=210002&cntntsNo=30656&sj=%EB%8B%A8%EA%B0%90&kidofcomdtySeCodeNm=%EA%B3%BC%EC%88%98&serviceType=ajaxType',
@@ -84,6 +88,15 @@ def get_schedule():
     return schedule
 
 def parse_date(start, duration):
+    """Split farming schedule.
+    
+    :param start: start date
+    :type start: int
+    :param duration: farming duration
+    :type duration: int
+    :return: (start_month, start_day), (end_month, end_day)
+    :rtype: tuple, int
+    """
     start_month = start // 3 + 1
     start_day = start % 3 * 10 + 1
     end_month = (start + duration) // 3 + 1
@@ -95,9 +108,14 @@ def parse_date(start, duration):
 
 
 def get_vermin():
-    ############### vermin information (ncpms) ###############
+    """Collect vermin data from https://ncpms.rda.go.kr/npms/Main.np
+    
+    :return: pairs of {fruit : vermin_info}
+    :rtype: dict
+    """
+
     # apikey for https://ncpms.rda.go.kr/npms/Main.np 
-    apiKey = "20219872d708c1b7a2e5c6ee6bc6d216de60"
+    apiKey = "put your api key"
 
     # service Code - Detail information in the Open API
     serviceCode = "SVC01"
@@ -163,6 +181,7 @@ def get_vermin():
 ############### input data in mongo ###############
 
 def save_to_db():
+    """ave the given {fruit : farming_schedule} and {fruit : vermin_info} pairs to DB"""
     
     client = MongoClient()
 
