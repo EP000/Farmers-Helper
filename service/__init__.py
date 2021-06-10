@@ -3,14 +3,12 @@ from flask import request
 import os
 import datetime
 from datetime import datetime
+import calendar
 import pdb
 from bson import json_util
 import hashlib
 from pymongo import MongoClient
 from bson.objectid import ObjectId
-
-import calendar
-
 import traceback
 from src import myconfig, mylogger
 from pprint import pprint
@@ -40,6 +38,13 @@ loggers['login'] = mylogger.get_logger('login', log_directory)
 
 @app.route('/')
 def web_login():
+    """Check login session.
+    if sess not exiration, return login page.
+    if sess keeping, return homepage.
+    
+    :return: HTML document
+    :rtype: str
+    """
     sess = request.cookies.get('username')
     if not sess:
         return render_template("login.html")
@@ -54,12 +59,13 @@ def web_login():
 def member():
     return render_template("member.html")
 
-@app.route('/help')
-def web_help():
-    return render_template("help.html")
-
 @app.route('/handle-login', methods=["POST"])
 def handle_login():
+    """login API function.
+    Login successful with ID and password
+    
+    :return: login success or fail
+    """
     username = request.form['username']
     password = request.form['password']
     
@@ -73,6 +79,11 @@ def handle_login():
 
 @app.route('/handle-register', methods=["POST"])
 def handle_register():
+    """Sign Up page.
+    All infomaion must be entered.
+    
+    :return: signUp success or fail
+    """
     try:
         username = request.form['username']
         password = request.form['password']
@@ -103,6 +114,11 @@ def handle_register():
 
 @app.route('/information', methods=['GET'])
 def information():
+    """Show user information.
+    
+    :return: HTML document
+    :rtype: str
+    """
     username = request.cookies.get('username')
     user = col_member.find_one({'username': username})
     if not user:
@@ -150,6 +166,11 @@ def information():
     
 @app.route('/vermin', methods=['GET'])
 def vermin():
+    """Show vermin information.
+    
+    :return: HTML document
+    :rtype: str
+    """
     username = request.cookies.get('username')
     user = col_member.find_one({'username': username})
     if not user:
@@ -164,6 +185,11 @@ def vermin():
      
 @app.route('/diary', methods=["GET"])
 def diary():
+    """Show farming diary.
+    
+    :return: HTML document
+    :rtype: str
+    """
     username = request.cookies.get('username')
     user = col_member.find_one({'username': username})
     if not user:
@@ -180,6 +206,10 @@ def diary():
 
 @app.route('/handle-diary', methods=['POST'])
 def handle_diary():
+    """Farming diary fill in.
+    
+    :return: save diary success or fail
+    """
     try:
         date = request.form['date']
         people = request.form['people']
@@ -213,7 +243,11 @@ def handle_diary():
     
 @app.route('/schedule', methods=["GET"])
 def schedule():
+    """Show farming schedule.
     
+    :return: HTML document
+    :rtype: str
+    """
     import datetime
     
     username = request.cookies.get('username')
@@ -251,13 +285,7 @@ def schedule():
     
 @app.route('/information', methods=["POST"])
 def infomation():
-    
     return render_template('information.html')
-    
-def user_crop():
-    crop = request.form['Crop']
-    
-    return crop
     
 def convert_to_SHA256(x):
     """Convert a given string to SHA256-encoded string.
