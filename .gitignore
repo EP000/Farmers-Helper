@@ -4,3 +4,4 @@ venv_*
 __pycache__/
 nohup*
 *.pickle
+Dockerfile
