@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Farmers_Helper documentation build configuration file, created by
-# sphinx-quickstart on Thu Jun 10 15:21:56 2021.
+# sphinx-quickstart on Thu Jun 10 17:02:07 2021.
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.
@@ -66,7 +66,7 @@ release = ''
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = 'ko'
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -189,6 +189,4 @@ epub_copyright = copyright
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
 
-import os
-import sys
-sys.path.insert(0, '/home/ubuntu/Farmers_Helper')
+
