@@ -1,0 +1,351 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ko">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>service &#8212; Farmers_Helper  documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/translations.js"></script>
+    <link rel="index" title="색인" href="../genindex.html" />
+    <link rel="search" title="검색" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for service</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">render_template</span><span class="p">,</span> <span class="n">make_response</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">request</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">calendar</span>
+<span class="kn">import</span> <span class="nn">pdb</span>
+<span class="kn">from</span> <span class="nn">bson</span> <span class="kn">import</span> <span class="n">json_util</span>
+<span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">from</span> <span class="nn">pymongo</span> <span class="kn">import</span> <span class="n">MongoClient</span>
+<span class="kn">from</span> <span class="nn">bson.objectid</span> <span class="kn">import</span> <span class="n">ObjectId</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">from</span> <span class="nn">src</span> <span class="kn">import</span> <span class="n">myconfig</span><span class="p">,</span> <span class="n">mylogger</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># create a logger.</span>
+<span class="n">project_root_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;FARMERS_HELPER&quot;</span><span class="p">)</span>
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">myconfig</span><span class="o">.</span><span class="n">get_config</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/share/project.config&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+    <span class="n">project_root_path</span><span class="p">))</span>
+<span class="n">db_ip</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;db&#39;</span><span class="p">][</span><span class="s1">&#39;ip&#39;</span><span class="p">]</span>
+<span class="n">db_port</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;db&#39;</span><span class="p">][</span><span class="s1">&#39;port&#39;</span><span class="p">])</span>
+<span class="n">db_name</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;db&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+<span class="n">db_client</span> <span class="o">=</span> <span class="n">MongoClient</span><span class="p">(</span><span class="n">db_ip</span><span class="p">,</span> <span class="n">db_port</span><span class="p">)</span>
+
+<span class="n">db</span> <span class="o">=</span> <span class="n">db_client</span><span class="p">[</span><span class="n">db_name</span><span class="p">]</span>
+
+<span class="n">col_crop</span> <span class="o">=</span> <span class="n">db</span><span class="p">[</span><span class="s1">&#39;Crop&#39;</span><span class="p">]</span>
+<span class="n">col_diary</span> <span class="o">=</span> <span class="n">db</span><span class="p">[</span><span class="s1">&#39;Diary&#39;</span><span class="p">]</span>
+<span class="n">col_member</span> <span class="o">=</span> <span class="n">db</span><span class="p">[</span><span class="s1">&#39;Member&#39;</span><span class="p">]</span>
+<span class="n">col_schedule</span> <span class="o">=</span> <span class="n">db</span><span class="p">[</span><span class="s1">&#39;Schedule&#39;</span><span class="p">]</span>
+<span class="n">col_vermin</span> <span class="o">=</span> <span class="n">db</span><span class="p">[</span><span class="s1">&#39;Vermin&#39;</span><span class="p">]</span>
+
+<span class="n">log_directory</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;logger&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;log_directory&#39;</span><span class="p">)</span>
+<span class="n">loggers</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="n">loggers</span><span class="p">[</span><span class="s1">&#39;login&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mylogger</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="s1">&#39;login&#39;</span><span class="p">,</span> <span class="n">log_directory</span><span class="p">)</span>
+
+<div class="viewcode-block" id="web_login"><a class="viewcode-back" href="../service.html#service.web_login">[문서]</a><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">web_login</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sess</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">cookies</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">sess</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s2">&quot;login.html&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">username</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">cookies</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">)</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">col_member</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="n">username</span><span class="p">})</span>
+        <span class="n">crop</span> <span class="o">=</span> <span class="n">col_crop</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;Crop&#39;</span><span class="p">]})</span>
+        
+        <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;index.html&#39;</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">usercrop</span><span class="o">=</span><span class="n">crop</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="member"><a class="viewcode-back" href="../service.html#service.member">[문서]</a><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/member&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">member</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s2">&quot;member.html&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="web_help"><a class="viewcode-back" href="../service.html#service.web_help">[문서]</a><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/help&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">web_help</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s2">&quot;help.html&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="handle_login"><a class="viewcode-back" href="../service.html#service.handle_login">[문서]</a><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/handle-login&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">handle_login</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;login API function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">username</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]</span>
+    <span class="n">password</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">]</span>
+    
+    <span class="n">user</span> <span class="o">=</span> <span class="n">col_member</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="n">username</span><span class="p">})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;statusCode&#39;</span><span class="p">:</span> <span class="mi">400</span><span class="p">,</span> <span class="s1">&#39;msg&#39;</span><span class="p">:</span> <span class="s1">&#39;아이디 오류&#39;</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">convert_to_SHA256</span><span class="p">(</span><span class="n">password</span><span class="p">)</span> <span class="o">!=</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;statusCode&#39;</span><span class="p">:</span> <span class="mi">400</span><span class="p">,</span> <span class="s1">&#39;msg&#39;</span><span class="p">:</span> <span class="s1">&#39;패스워드 오류&#39;</span><span class="p">}</span>
+    
+    <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;statusCode&#39;</span><span class="p">:</span> <span class="mi">200</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="handle_register"><a class="viewcode-back" href="../service.html#service.handle_register">[문서]</a><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/handle-register&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">handle_register</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">username</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]</span>
+        <span class="n">password</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">]</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+        <span class="n">Crop</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;Crop&#39;</span><span class="p">]</span>
+        <span class="n">phone</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;phone&#39;</span><span class="p">]</span>
+        <span class="n">address</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;address&#39;</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">username</span> <span class="ow">and</span> <span class="n">password</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">and</span> <span class="n">Crop</span> <span class="ow">and</span> <span class="n">phone</span> <span class="ow">and</span> <span class="n">address</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;statusCode&#39;</span><span class="p">:</span> <span class="mi">400</span><span class="p">,</span> <span class="s1">&#39;msg&#39;</span><span class="p">:</span> <span class="s1">&#39;정보부족&#39;</span><span class="p">}</span>
+        
+        <span class="k">if</span> <span class="n">col_member</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="n">username</span><span class="p">}):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;statusCode&#39;</span><span class="p">:</span> <span class="mi">400</span><span class="p">,</span> <span class="s1">&#39;msg&#39;</span><span class="p">:</span> <span class="s1">&#39;아이디 중복&#39;</span><span class="p">}</span>
+
+        <span class="n">info</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;username&#39;</span> <span class="p">:</span> <span class="n">username</span><span class="p">,</span>
+            <span class="s1">&#39;password&#39;</span> <span class="p">:</span> <span class="n">convert_to_SHA256</span><span class="p">(</span><span class="n">password</span><span class="p">),</span>
+            <span class="s1">&#39;name&#39;</span> <span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+            <span class="s1">&#39;Crop&#39;</span> <span class="p">:</span> <span class="n">col_crop</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;name&#39;</span> <span class="p">:</span> <span class="n">Crop</span><span class="p">})[</span><span class="s1">&#39;_id&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;phone&#39;</span> <span class="p">:</span> <span class="n">phone</span><span class="p">,</span>
+            <span class="s1">&#39;address&#39;</span> <span class="p">:</span> <span class="n">address</span>
+        <span class="p">}</span>
+
+        <span class="n">col_member</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;statusCode&#39;</span><span class="p">:</span> <span class="mi">200</span><span class="p">}</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;statusCode&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s1">&#39;msg&#39;</span><span class="p">:</span> <span class="s1">&#39;서버에러&#39;</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="information"><a class="viewcode-back" href="../service.html#service.information">[문서]</a><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/information&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GET&#39;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">information</span><span class="p">():</span>
+    <span class="n">username</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">cookies</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">)</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">col_member</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="n">username</span><span class="p">})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;login.html&#39;</span><span class="p">)</span>
+    
+    <span class="n">crop</span> <span class="o">=</span> <span class="n">col_crop</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;Crop&#39;</span><span class="p">]})</span>
+    
+    <span class="n">member_info</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">col_member</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;username&#39;</span> <span class="p">:</span> <span class="n">username</span><span class="p">}))</span>
+    <span class="n">diary_info</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">col_diary</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;Member&#39;</span><span class="p">:</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">]}))</span>
+    
+    <span class="n">info_ret</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">member_info</span><span class="p">:</span>
+        <span class="n">info_ret</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]</span>
+        <span class="n">info_ret</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+        <span class="n">phone</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;phone&#39;</span><span class="p">]</span>
+        <span class="n">info_ret</span><span class="p">[</span><span class="s1">&#39;phone&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">phone</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39; - &#39;</span> <span class="o">+</span> <span class="n">phone</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">7</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39; - &#39;</span> <span class="o">+</span> <span class="n">phone</span><span class="p">[</span><span class="mi">7</span><span class="p">:]</span>
+        <span class="n">info_ret</span><span class="p">[</span><span class="s1">&#39;address&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;address&#39;</span><span class="p">]</span>
+    
+    <span class="n">diary_ret</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">diary_info</span><span class="p">:</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;date&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">people</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;people&#39;</span><span class="p">]</span>
+        <span class="n">duration</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="n">col_schedule</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span> <span class="p">:</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;step&#39;</span><span class="p">]</span> <span class="p">})[</span><span class="s1">&#39;event&#39;</span><span class="p">]</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span>
+        <span class="n">useditem</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;useditem&#39;</span><span class="p">]</span>
+        <span class="n">etc</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;etc&#39;</span><span class="p">]</span>
+        
+        <span class="n">total_info</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;date&#39;</span> <span class="p">:</span> <span class="n">date</span><span class="p">,</span>
+                      <span class="s1">&#39;people&#39;</span> <span class="p">:</span> <span class="n">people</span><span class="p">,</span>
+                      <span class="s1">&#39;duration&#39;</span> <span class="p">:</span> <span class="n">duration</span><span class="p">,</span>
+                      <span class="s1">&#39;step&#39;</span> <span class="p">:</span> <span class="n">step</span><span class="p">,</span>
+                      <span class="s1">&#39;content&#39;</span> <span class="p">:</span> <span class="n">content</span><span class="p">,</span>
+                      <span class="s1">&#39;useditem&#39;</span> <span class="p">:</span> <span class="n">useditem</span><span class="p">,</span>
+                      <span class="s1">&#39;etc&#39;</span> <span class="p">:</span> <span class="n">etc</span>
+                     <span class="p">}</span>
+        
+        <span class="n">diary_ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">total_info</span><span class="p">)</span>
+    
+    <span class="n">diary_ret</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;date&#39;</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;information.html&#39;</span><span class="p">,</span> <span class="n">usercrop</span><span class="o">=</span><span class="n">crop</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">username</span><span class="o">=</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> 
+                           <span class="n">diary_info</span><span class="o">=</span><span class="n">diary_ret</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info_ret</span><span class="p">)</span></div>
+    
+    
+<div class="viewcode-block" id="vermin"><a class="viewcode-back" href="../service.html#service.vermin">[문서]</a><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/vermin&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GET&#39;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">vermin</span><span class="p">():</span>
+    <span class="n">username</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">cookies</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">)</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">col_member</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="n">username</span><span class="p">})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;login.html&#39;</span><span class="p">)</span>
+    
+    <span class="n">crop</span> <span class="o">=</span> <span class="n">col_crop</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;Crop&#39;</span><span class="p">]})</span>
+    <span class="n">vermin_data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">col_vermin</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;$in&#39;</span><span class="p">:</span> <span class="n">crop</span><span class="p">[</span><span class="s1">&#39;Vermin&#39;</span><span class="p">]}</span> <span class="p">}))</span>
+    <span class="k">for</span> <span class="n">vermin</span> <span class="ow">in</span> <span class="n">vermin_data</span><span class="p">:</span>
+        <span class="k">del</span> <span class="n">vermin</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">]</span>
+    
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;vermin.html&#39;</span><span class="p">,</span> <span class="n">vermin_data</span><span class="o">=</span><span class="n">vermin_data</span><span class="p">,</span> <span class="n">usercrop</span><span class="o">=</span><span class="n">crop</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">username</span><span class="o">=</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span></div>
+     
+<div class="viewcode-block" id="diary"><a class="viewcode-back" href="../service.html#service.diary">[문서]</a><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/diary&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;GET&quot;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">diary</span><span class="p">():</span>
+    <span class="n">username</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">cookies</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">)</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">col_member</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="n">username</span><span class="p">})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;login.html&#39;</span><span class="p">)</span>
+    
+    <span class="n">crop</span> <span class="o">=</span> <span class="n">col_crop</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;Crop&#39;</span><span class="p">]})</span>
+    <span class="n">schedule_data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">col_schedule</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;$in&#39;</span><span class="p">:</span> <span class="n">crop</span><span class="p">[</span><span class="s1">&#39;Schedule&#39;</span><span class="p">]},</span> <span class="s1">&#39;category&#39;</span><span class="p">:</span> <span class="s1">&#39;생육과정(주요농작업)&#39;</span><span class="p">}))</span>
+    <span class="n">schedule</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+        <span class="s1">&#39;&lt;option value=&quot;</span><span class="si">%s</span><span class="s1">&quot;&gt;</span><span class="si">%s</span><span class="s1">&lt;/option&gt;&#39;</span> <span class="o">%</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">sch</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">]),</span> <span class="n">sch</span><span class="p">[</span><span class="s1">&#39;event&#39;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">sch</span> <span class="ow">in</span> <span class="n">schedule_data</span>
+    <span class="p">])</span>
+    
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;diary.html&#39;</span><span class="p">,</span> <span class="n">schedule</span><span class="o">=</span><span class="n">schedule</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">usercrop</span><span class="o">=</span><span class="n">crop</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="handle_diary"><a class="viewcode-back" href="../service.html#service.handle_diary">[문서]</a><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/handle-diary&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">handle_diary</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;date&#39;</span><span class="p">]</span>
+        <span class="n">people</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;people&#39;</span><span class="p">]</span>
+        <span class="n">duration</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;step&#39;</span><span class="p">]</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span>
+        <span class="n">useditem</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;useditem&#39;</span><span class="p">]</span>
+        <span class="n">etc</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;etc&#39;</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">date</span> <span class="ow">and</span> <span class="n">people</span> <span class="ow">and</span> <span class="n">duration</span> <span class="ow">and</span> <span class="n">step</span> <span class="ow">and</span> <span class="n">content</span> <span class="ow">and</span> <span class="n">useditem</span> <span class="ow">and</span> <span class="n">etc</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;statusCode&#39;</span><span class="p">:</span> <span class="mi">400</span><span class="p">,</span> <span class="s1">&#39;msg&#39;</span><span class="p">:</span> <span class="s1">&#39;정보부족. 모든 정보를 다 입력해주세요!&#39;</span><span class="p">}</span>
+        
+        <span class="n">info</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;date&#39;</span> <span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;people&#39;</span> <span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">people</span><span class="p">),</span>
+            <span class="s1">&#39;duration&#39;</span> <span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">duration</span><span class="p">),</span>
+            <span class="s1">&#39;step&#39;</span> <span class="p">:</span> <span class="n">ObjectId</span><span class="p">(</span><span class="n">step</span><span class="p">),</span>
+            <span class="s1">&#39;content&#39;</span> <span class="p">:</span> <span class="n">content</span><span class="p">,</span>
+            <span class="s1">&#39;useditem&#39;</span> <span class="p">:</span> <span class="n">useditem</span><span class="p">,</span>
+            <span class="s1">&#39;etc&#39;</span> <span class="p">:</span> <span class="n">etc</span><span class="p">,</span>
+            <span class="s1">&#39;Member&#39;</span><span class="p">:</span> <span class="n">col_member</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">cookies</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">)})[</span><span class="s1">&#39;_id&#39;</span><span class="p">]</span>
+        <span class="p">}</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+
+        <span class="n">col_diary</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;statusCode&#39;</span><span class="p">:</span> <span class="mi">200</span><span class="p">}</span> 
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;statusCode&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s1">&#39;msg&#39;</span><span class="p">:</span> <span class="s1">&#39;서버에러&#39;</span><span class="p">}</span></div>
+    
+<div class="viewcode-block" id="schedule"><a class="viewcode-back" href="../service.html#service.schedule">[문서]</a><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/schedule&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;GET&quot;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">schedule</span><span class="p">():</span>
+    
+    <span class="kn">import</span> <span class="nn">datetime</span>
+    
+    <span class="n">username</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">cookies</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">)</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">col_member</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="n">username</span><span class="p">})</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;login.html&#39;</span><span class="p">)</span>
+    
+    <span class="n">crop</span> <span class="o">=</span> <span class="n">col_crop</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;Crop&#39;</span><span class="p">]})</span>
+    
+    <span class="n">today</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+    
+    <span class="n">year</span> <span class="o">=</span> <span class="n">today</span><span class="o">.</span><span class="n">year</span>
+    <span class="n">month</span> <span class="o">=</span> <span class="n">today</span><span class="o">.</span><span class="n">month</span>
+    
+    <span class="n">start_day</span><span class="p">,</span> <span class="n">last_day</span> <span class="o">=</span> <span class="n">calendar</span><span class="o">.</span><span class="n">monthrange</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">)</span>
+    
+    <span class="n">start_day</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">start_week</span> <span class="o">=</span> <span class="p">(</span><span class="n">start_day</span><span class="o">.</span><span class="n">weekday</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">7</span> <span class="c1"># return 0~6 (일 ~ 토)</span>
+    
+    <span class="n">schedule_data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">col_schedule</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;$in&#39;</span><span class="p">:</span> <span class="n">crop</span><span class="p">[</span><span class="s1">&#39;Schedule&#39;</span><span class="p">]},</span> <span class="s1">&#39;category&#39;</span><span class="p">:</span> <span class="s1">&#39;생육과정(주요농작업)&#39;</span><span class="p">}))</span>
+    
+    <span class="n">events</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">last_day</span><span class="p">)]</span>
+    <span class="k">for</span> <span class="n">sch</span> <span class="ow">in</span> <span class="n">schedule_data</span><span class="p">:</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">sch</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">]</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">sch</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">day</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">last_day</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">end</span><span class="p">:</span>
+                <span class="n">events</span><span class="p">[</span><span class="n">day</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;&lt;br/&gt;&#39;</span> <span class="o">+</span> <span class="n">sch</span><span class="p">[</span><span class="s1">&#39;event&#39;</span><span class="p">]</span>
+                
+    <span class="n">events</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">start_week</span> <span class="o">+</span> <span class="n">events</span>
+             
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;schedule.html&#39;</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">usercrop</span><span class="o">=</span><span class="n">crop</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> 
+                           <span class="n">year</span><span class="o">=</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="n">month</span><span class="p">,</span> <span class="n">events</span><span class="o">=</span><span class="n">events</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="infomation"><a class="viewcode-back" href="../service.html#service.infomation">[문서]</a><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/information&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">infomation</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;information.html&#39;</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="convert_to_SHA256"><a class="viewcode-back" href="../service.html#service.convert_to_SHA256">[문서]</a><span class="k">def</span> <span class="nf">convert_to_SHA256</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a given string to SHA256-encoded string.</span>
+<span class="sd">    :param x: arbitrary string.</span>
+<span class="sd">    :type x: str</span>
+<span class="sd">    :return: SHA256 encoded string</span>
+<span class="sd">    :rtype: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">result</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">모듈 코드</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>빠른 검색</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="바로 가기" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.7</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
