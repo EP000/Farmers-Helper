@@ -24,3 +24,8 @@
 
 ## 환경
 Ubuntu 18.04
+
+## 대회
+[2020 농림축산식품 공공 및 빅데이터 활용 창업경진대회](https://data.mafra.go.kr/contest/competition.do)  
+아이디어 기획(팜맵데이터) 부분 최우수상 수상
+
