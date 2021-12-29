@@ -22,6 +22,10 @@
   - API
   - 병해충 정보
 
+## DB 구조
+- mongoDB
+<img src="https://user-images.githubusercontent.com/70522267/147641668-0334827e-76af-42a4-8c3b-ee4e71e9995e.png"  width="500"/>
+
 ## 환경
 Ubuntu 18.04
 
